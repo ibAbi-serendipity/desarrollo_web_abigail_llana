@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle Aviso de Adopción</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Detalle Aviso de Adopción</h1>
+  </header>
+
+  <main>
+    <h2>Información del aviso</h2>
+    <p><strong>Fecha Publicación:</strong> 2025-08-25</p>
+    <p><strong>Fecha Entrega:</strong> 2025-08-28</p>
+    <p><strong>Comuna:</strong> Iquique</p>
+    <p><strong>Sector:</strong> Centro</p>
+    <p><strong>Cantidad:</strong> 2</p>
+    <p><strong>Tipo:</strong> Gato</p>
+    <p><strong>Edad:</strong> 3 meses</p>
+    <p><strong>Nombre Contacto:</strong> Ana Torres</p>
+    <p><strong>Medio Contacto:</strong> WhatsApp</p>
+    <p><strong>Total Fotos:</strong> 3</p>
+
+    <div class="fotos">
+      <img src="img/gato1.jpeg" alt="Foto gato" onclick="mostrarFoto(this.src)">
+      <img src="img/gato2.jpg" alt="Foto gato" onclick="mostrarFoto(this.src)">
+      <img src="img/gato3.jpg" alt="Foto gato" onclick="mostrarFoto(this.src)">
+    </div>
+
+    <a href="listado.html">Volver al listado</a> | 
+    <a href="index.html">Volver a la portada</a>
+  </main>
+
+  <!-- Visor de fotos -->
+  <div id="visor">
+    <div>
+      <img id="fotoGrande" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Foto ampliada">
+      <button id="cerrarVisor">Cerrar</button>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
