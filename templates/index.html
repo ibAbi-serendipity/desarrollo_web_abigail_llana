@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Adopción de Mascotas - Portada{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Bienvenido al sistema de adopciones</h1>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="/agregar">➕ Agregar aviso de adopción</a></li>
+        <li><a href="/listado">📋 Ver listado de adopciones</a></li>
+        <li><a href="/estadisticas">📊 Estadísticas</a></li>
+    </ul>
+</nav>
+
+<main>
+    <h2>Últimos avisos</h2>
+    {% if avisos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha de publicación</th>
+                <th>Comuna</th>
+                <th>Sector</th>
+                <th>Cantidad, tipo y edad</th>
+                <th>Foto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aviso in avisos %}
+            <tr>
+                <td>{{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ aviso.comuna.nombre }}</td>
+                <td>{{ aviso.sector if aviso.sector else '-' }}</td>
+                <td>
+                    {{ aviso.cantidad }} 
+                    {{ 'Gato' if aviso.tipo == 'gato' else 'Perro' }}{{ 's' if aviso.cantidad > 1 else '' }}
+                    {{ aviso.edad }} 
+                    {% if aviso.unidad_medida == 'a' %}
+                        año{{ 's' if aviso.edad > 1 else '' }}
+                    {% else %}
+                        mes{{ 'es' if aviso.edad > 1 else '' }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if aviso.fotos %}
+                    <img src="{{ url_for('static', filename=aviso.fotos[0].ruta_archivo) }}" 
+                         alt="Foto {{ aviso.tipo }}" 
+                         width="80">
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay avisos de adopción disponibles aún.</p>
+    {% endif %}
+</main>
+{% endblock %}

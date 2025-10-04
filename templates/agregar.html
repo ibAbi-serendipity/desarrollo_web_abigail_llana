@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Aviso de Adopción{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Agregar Aviso de Adopción</h1>
+</header>
+
+<main>
+    {% if errores %}
+    <div class="errores">
+        <h3>⚠️ Errores de validación:</h3>
+        <ul>
+            {% for error in errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form id="formAviso" method="POST" action="{{ url_for('agregar') }}" enctype="multipart/form-data">
+        <!-- Sección 1: Lugar -->
+        <fieldset>
+            <legend>¿Dónde?</legend>
+
+            <label for="region">Región: <span class="required">*</span></label>
+            <select id="region" name="region" required>
+                <option value="">Seleccione</option>
+                {% for region in regiones %}
+                <option value="{{ region.id }}" 
+                    {% if form_data and form_data.get('region') == region.id|string %}selected{% endif %}>
+                    {{ region.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <label for="comuna">Comuna: <span class="required">*</span></label>
+            <select id="comuna" name="comuna" required>
+                <option value="">Seleccione primero una región</option>
+            </select>
+
+            <label for="sector">Sector:</label>
+            <input type="text" id="sector" name="sector" maxlength="100" 
+                   value="{{ form_data.get('sector', '') if form_data else '' }}">
+        </fieldset>
+
+        <!-- Sección 2: Contacto -->
+        <fieldset>
+            <legend>¿Contacto de esta publicación?</legend>
+
+            <label for="nombre">Nombre: <span class="required">*</span></label>
+            <input type="text" id="nombre" name="nombre" minlength="3" maxlength="200" required
+                   value="{{ form_data.get('nombre', '') if form_data else '' }}">
+
+            <label for="email">Email: <span class="required">*</span></label>
+            <input type="email" id="email" name="email" maxlength="100" required
+                   value="{{ form_data.get('email', '') if form_data else '' }}">
+
+            <label for="celular">Número de celular:</label>
+            <input type="tel" id="celular" name="celular" placeholder="+569.12345678"
+                   value="{{ form_data.get('celular', '') if form_data else '' }}">
+
+            <div id="contactos">
+                <label>Contactar por:</label>
+                <select id="selectContacto" onchange="agregarContacto(this)">
+                    <option value="">Seleccione (opcional)</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="telegram">Telegram</option>
+                    <option value="X">X</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="otra">Otra</option>
+                </select>
+                <div id="listaContactos"></div>
+            </div>
+        </fieldset>
+
+        <!-- Sección 3: Mascota -->
+        <fieldset>
+            <legend>¿Qué mascota ofrece en adopción?</legend>
+
+            <label for="tipo">Tipo: <span class="required">*</span></label>
+            <select id="tipo" name="tipo" required>
+                <option value="">Seleccione</option>
+                <option value="gato" {% if form_data and form_data.get('tipo') == 'gato' %}selected{% endif %}>Gato</option>
+                <option value="perro" {% if form_data and form_data.get('tipo') == 'perro' %}selected{% endif %}>Perro</option>
+            </select>
+
+            <label for="cantidad">Cantidad: <span class="required">*</span></label>
+            <input type="number" id="cantidad" name="cantidad" min="1" required
+                   value="{{ form_data.get('cantidad', '') if form_data else '' }}">
+
+            <label for="edad">Edad: <span class="required">*</span></label>
+            <input type="number" id="edad" name="edad" min="1" required
+                   value="{{ form_data.get('edad', '') if form_data else '' }}">
+
+            <label for="unidadEdad">Unidad de medida: <span class="required">*</span></label>
+            <select id="unidadEdad" name="unidadEdad" required>
+                <option value="">Seleccione</option>
+                <option value="meses" {% if form_data and form_data.get('unidadEdad') == 'meses' %}selected{% endif %}>Meses</option>
+                <option value="años" {% if form_data and form_data.get('unidadEdad') == 'años' %}selected{% endif %}>Años</option>
+            </select>
+
+            <label for="fechaEntrega">Fecha disponible para entrega: <span class="required">*</span></label>
+            <input type="datetime-local" id="fechaEntrega" name="fechaEntrega" required
+                   value="{{ form_data.get('fechaEntrega', '') if form_data else '' }}">
+
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" cols="50" rows="10" maxlength="500">{{ form_data.get('descripcion', '') if form_data else '' }}</textarea>
+
+            <div id="fotos">
+                <label>Fotos (mínimo 1): <span class="required">*</span></label>
+                <div id="listaFotos">
+                    <input type="file" name="fotos" accept="image/*" required>
+                </div>
+                <button type="button" onclick="agregarFoto()">➕ Agregar otra foto</button>
+            </div>
+        </fieldset>
+
+        <div class="form-actions">
+            <button type="submit">Agregar este aviso de adopción</button>
+        </div>
+    </form>
+
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Confirmación</h3>
+            <p>¿Está seguro que desea agregar este aviso de adopción?</p>
+            <div class="modal-buttons">
+                <button type="button" class="btn-confirmar" onclick="confirmarEnvio(true)">Sí, estoy seguro</button>
+                <button type="button" class="btn-cancelar" onclick="confirmarEnvio(false)">No, quiero volver al formulario</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <a href="{{ url_for('index') }}">← Volver a portada</a>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}
