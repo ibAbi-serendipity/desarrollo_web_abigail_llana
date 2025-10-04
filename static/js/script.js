@@ -1,16 +1,11 @@
-// VALIDACIONES FORMULARIO 
+// VALIDACIONES FORMULARIO
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formAviso");
   if (form) {
     form.addEventListener("submit", validarFormulario);
   }
 
-  // Inicializar regiones y comunas
-  if (typeof region_comuna !== "undefined") {
-    inicializarRegionesYComunas();
-  } else {
-    console.error("region_comuna no está definido al cargar la página.");
-  }
+  inicializarRegionesConFlask();
 
   // Prellenar fecha de entrega (+3 horas)
   const fechaEntrega = document.getElementById("fechaEntrega");
@@ -47,7 +42,7 @@ function validarFormulario(event) {
   }
 
   // Teléfono (opcional)
-  const telefono = document.getElementById("telefono").value.trim();
+  const telefono = document.getElementById("celular").value.trim();
   if (telefono && !/^\+\d{3}\.\d{8,12}$/.test(telefono)) {
     errores.push("El teléfono debe estar en formato +NNN.NNNNNNNN");
   }
@@ -64,6 +59,7 @@ function validarFormulario(event) {
       }
     });
   }
+
   // Tipo
   const tipo = document.getElementById("tipo").value;
   if (!tipo) errores.push("Debe seleccionar el tipo de mascota.");
@@ -83,11 +79,11 @@ function validarFormulario(event) {
   if (!unidadEdad) errores.push("Debe seleccionar la unidad de edad.");
 
   // Fecha entrega
-  const fechaEntrega = document.getElementById("fechaEntrega").value;
-  if (!fechaEntrega) {
+  const fechaEntregaVal = document.getElementById("fechaEntrega").value;
+  if (!fechaEntregaVal) {
     errores.push("Debe seleccionar la fecha de entrega.");
   } else {
-    const fechaIngresada = new Date(fechaEntrega);
+    const fechaIngresada = new Date(fechaEntregaVal);
     const ahora = new Date();
     if (fechaIngresada < ahora) {
       errores.push("La fecha de entrega no puede ser menor a la actual.");
@@ -113,16 +109,14 @@ function validarFormulario(event) {
   document.getElementById("modalConfirmacion").style.display = "block";
 }
 
-// CONFIRMACIÓN 
+// CONFIRMACIÓN /Ahora hace submit al servidor
 function confirmarEnvio(aceptar) {
   const modal = document.getElementById("modalConfirmacion");
 
   if (aceptar) {
     modal.style.display = "none";
-    document.body.innerHTML = `
-      <h2>Hemos recibido la información de adopción, muchas gracias y suerte!</h2>
-      <a href="index.html"><button>Volver a la portada</button></a>
-    `;
+    // Enviar formulario a Flask
+    document.getElementById("formAviso").submit();
   } else {
     modal.style.display = "none";
   }
@@ -138,13 +132,17 @@ function agregarFoto() {
     return;
   }
 
+  const label = document.createElement("label");
   const nuevoInput = document.createElement("input");
   nuevoInput.type = "file";
   nuevoInput.accept = "image/*";
-  fotosDiv.appendChild(nuevoInput);
+  nuevoInput.name = "fotos";
+  
+  label.appendChild(nuevoInput);
+  fotosDiv.appendChild(label);
 }
 
-//  AGREGAR CONTACTO EXTRA 
+// AGREGAR CONTACTO EXTRA 
 function agregarContacto(select) {
   const valor = select.value;
   if (!valor) return;
@@ -159,81 +157,179 @@ function agregarContacto(select) {
 
   const cont = document.createElement("div");
   cont.className = "contactoExtra";
+  cont.style.marginTop = "10px";
+  cont.style.padding = "10px";
+  cont.style.backgroundColor = "#f9f9f9";
+  cont.style.borderRadius = "5px";
 
   const label = document.createElement("label");
   label.textContent = `Ingrese ID o URL de ${valor}:`;
+  label.style.display = "block";
+  label.style.marginBottom = "5px";
 
+  // Input hidden con el tipo de contacto
+  const inputTipo = document.createElement("input");
+  inputTipo.type = "hidden";
+  inputTipo.name = "contacto_tipo";
+  inputTipo.value = valor;
+
+  // Input para el identificador/URL
   const input = document.createElement("input");
   input.type = "text";
-  input.name = "contacto_" + valor;
+  input.name = "contacto_id";
   input.minLength = 4;
   input.maxLength = 50;
+  input.placeholder = `ID o URL de ${valor}`;
+  input.style.width = "70%";
+  input.style.marginRight = "10px";
+
+  // Botón para eliminar este contacto
+  const btnEliminar = document.createElement("button");
+  btnEliminar.type = "button";
+  btnEliminar.textContent = "Eliminar";
+  btnEliminar.className = "btn-eliminar";
+  btnEliminar.onclick = function() {
+    cont.remove();
+  };
 
   cont.appendChild(label);
+  cont.appendChild(inputTipo);
   cont.appendChild(input);
+  cont.appendChild(btnEliminar);
   div.appendChild(cont);
 
+  // Resetear el select para poder agregar más
   select.value = "";
 }
 
 // REGIONES Y COMUNAS 
-function inicializarRegionesYComunas() {
+function inicializarRegionesConFlask() {
   const regionSelect = document.getElementById("region");
   const comunaSelect = document.getElementById("comuna");
 
   if (!regionSelect || !comunaSelect) return;
 
-  // Llenar regiones
-  region_comuna.regiones.forEach(region => {
-    const opt = document.createElement("option");
-    opt.value = region.nombre;
-    opt.textContent = region.nombre;
-    regionSelect.appendChild(opt);
-  });
-
-  // Cuando cambia región, poblar comunas
-  regionSelect.addEventListener("change", () => {
-    comunaSelect.innerHTML = '<option value="">Seleccione</option>';
-    const regionElegida = region_comuna.regiones.find(r => r.nombre === regionSelect.value);
-    if (regionElegida) {
-      regionElegida.comunas.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.nombre;
-        opt.textContent = c.nombre;
-        comunaSelect.appendChild(opt);
-      });
+  // Cuando cambia región, cargar comunas desde Flask
+  regionSelect.addEventListener("change", function() {
+    const regionId = this.value;
+    
+    if (!regionId) {
+      comunaSelect.innerHTML = '<option value="">Seleccione</option>';
+      return;
     }
+
+    comunaSelect.innerHTML = '<option value="">Cargando...</option>';
+    comunaSelect.disabled = true;
+
+    // Fetch a la API de Flask
+    fetch(`/api/comunas/${regionId}`)
+      .then(response => response.json())
+      .then(data => {
+        comunaSelect.innerHTML = '<option value="">Seleccione</option>';
+        
+        if (data.comunas && data.comunas.length > 0) {
+          data.comunas.forEach(comuna => {
+            const opt = document.createElement("option");
+            opt.value = comuna.id;
+            opt.textContent = comuna.nombre;
+            comunaSelect.appendChild(opt);
+          });
+        }
+        
+        comunaSelect.disabled = false;
+      })
+      .catch(error => {
+        console.error('Error al cargar comunas:', error);
+        comunaSelect.innerHTML = '<option value="">Error al cargar</option>';
+        comunaSelect.disabled = false;
+      });
   });
 }
 
-//  LISTADO: CLIC EN FILA 
+// LISTADO: CLIC EN FILA 
 document.addEventListener("DOMContentLoaded", () => {
   const tablaAvisos = document.getElementById("tablaAvisos");
   if (tablaAvisos) {
     tablaAvisos.querySelectorAll("tbody tr").forEach(fila => {
       fila.addEventListener("click", () => {
-        window.location.href = "detalle.html";
+        //Redirigir a la ruta Flask 
+        const avisoId = fila.dataset.avisoId;
+        if (avisoId) {
+          window.location.href = `/detalle/${avisoId}`;
+        }
       });
     });
   }
 });
 
-//  DETALLE: VISOR DE FOTOS 
+// DETALLE: VISOR DE FOTOS 
 document.addEventListener("DOMContentLoaded", () => {
   const visor = document.getElementById("visor");
   const fotoGrande = document.getElementById("fotoGrande");
   const btnCerrar = document.getElementById("cerrarVisor");
 
   if (visor && fotoGrande && btnCerrar) {
-    // Función para mostrar la foto en grande
     window.mostrarFoto = function(src) {
       fotoGrande.src = src;
       visor.style.display = "flex";
     };
 
-    // Botón cerrar
     btnCerrar.addEventListener("click", () => {
       visor.style.display = "none";
     });
   }
 });
+
+// MODAL DE CONFIRMACIÓN - Para botón con onclick
+function mostrarConfirmacion() {
+  const form = document.getElementById("formAviso");
+  
+  // Validar manualmente antes de mostrar modal
+  let errores = [];
+  
+  const region = document.getElementById("region").value;
+  const comuna = document.getElementById("comuna").value;
+  const nombre = document.getElementById("nombre").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const tipo = document.getElementById("tipo").value;
+  const cantidad = document.getElementById("cantidad").value;
+  const edad = document.getElementById("edad").value;
+  const unidadEdad = document.getElementById("unidadEdad").value;
+  const fechaEntrega = document.getElementById("fechaEntrega").value;
+  
+  if (!region) errores.push("Debe seleccionar una región.");
+  if (!comuna) errores.push("Debe seleccionar una comuna.");
+  if (nombre.length < 3 || nombre.length > 200) errores.push("El nombre debe tener entre 3 y 200 caracteres.");
+  if (!email.includes('@')) errores.push("El email no es válido.");
+  if (!tipo) errores.push("Debe seleccionar el tipo de mascota.");
+  if (!cantidad || cantidad < 1) errores.push("La cantidad debe ser al menos 1.");
+  if (!edad || edad < 1) errores.push("La edad debe ser al menos 1.");
+  if (!unidadEdad) errores.push("Debe seleccionar la unidad de edad.");
+  if (!fechaEntrega) errores.push("Debe seleccionar la fecha de entrega.");
+  
+  // Validar contactos (opcional, pero si hay deben ser validos)
+  const contactosInputs = document.querySelectorAll('.contactoExtra input[name="contacto_id"]');
+  contactosInputs.forEach(input => {
+    const valor = input.value.trim();
+    if (valor.length > 0 && (valor.length < 4 || valor.length > 50)) {
+      errores.push("Cada contacto debe tener entre 4 y 50 caracteres.");
+    }
+  });
+
+  // Validar fotos
+  const fotos = document.querySelectorAll("#fotos input[type='file']");
+  let hayFoto = false;
+  fotos.forEach(f => {
+    if (f.files.length > 0) hayFoto = true;
+  });
+  if (!hayFoto) errores.push("Debe subir al menos una foto.");
+  
+  if (errores.length > 0) {
+    alert("Errores encontrados:\n- " + errores.join("\n- "));
+    return false;
+  }
+  
+  // Si todo está bien, mostrar modal
+  document.getElementById("modalConfirmacion").style.display = "block";
+  return false;
+}
