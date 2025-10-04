@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Listado de Avisos de Adopción{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Listado de Avisos de Adopción</h1>
+</header>
+
+<main>
+    {% if avisos.items %}
+    <table class="tabla-listado" id="tablaAvisos">
+        <thead>
+            <tr>
+                <th>Fecha Publicación</th>
+                <th>Fecha Entrega</th>
+                <th>Comuna</th>
+                <th>Sector</th>
+                <th>Cantidad, Tipo y Edad</th>
+                <th>Nombre del contacto</th>
+                <th>Total Fotos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aviso in avisos.items %}
+            <tr onclick="window.location='{{ url_for('detalle', aviso_id=aviso.id) }}'" style="cursor: pointer;" data-aviso-id="{{ aviso.id }}">
+                <td>{{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ aviso.comuna.nombre }}</td>
+                <td>{{ aviso.sector if aviso.sector else '-' }}</td>
+                <td>
+                    {{ aviso.cantidad }} 
+                    {{ 'Gato' if aviso.tipo == 'gato' else 'Perro' }}{{ 's' if aviso.cantidad > 1 else '' }}
+                    {{ aviso.edad }} 
+                    {% if aviso.unidad_medida == 'a' %}
+                        año{{ 's' if aviso.edad > 1 else '' }}
+                    {% else %}
+                        mes{{ 'es' if aviso.edad > 1 else '' }}
+                    {% endif %}
+                </td>
+                <td>{{ aviso.nombre }}</td>
+                <td>{{ aviso.fotos|length }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if avisos.has_prev %}
+        <a href="{{ url_for('listado', page=avisos.prev_num) }}" class="btn-paginacion">← Anterior</a>
+        {% else %}
+        <span class="btn-paginacion disabled">← Anterior</span>
+        {% endif %}
+        
+        <span class="info-pagina">
+            Página {{ avisos.page }} de {{ avisos.pages }} 
+            ({{ avisos.total }} aviso{{ 's' if avisos.total != 1 else '' }} en total)
+        </span>
+        
+        {% if avisos.has_next %}
+        <a href="{{ url_for('listado', page=avisos.next_num) }}" class="btn-paginacion">Siguiente →</a>
+        {% else %}
+        <span class="btn-paginacion disabled">Siguiente →</span>
+        {% endif %}
+    </div>
+    
+    {% else %}
+    <p class="sin-avisos">No hay avisos de adopción disponibles.</p>
+    {% endif %}
+</main>
+
+<footer>
+    <a href="{{ url_for('index') }}">← Volver a portada</a>
+</footer>
+{% endblock %}

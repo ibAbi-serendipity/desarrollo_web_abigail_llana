@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Aviso de Adopción{% endblock %}
+
+{% block content %}
+<header>
+    <h1>Detalle Aviso de Adopción</h1>
+</header>
+
+<main>
+    <div class="detalle-aviso">
+        <h2>Información del aviso</h2>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <strong>Fecha Publicación:</strong> 
+                {{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Fecha Entrega:</strong> 
+                {{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Región:</strong> 
+                {{ aviso.comuna.region.nombre }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Comuna:</strong> 
+                {{ aviso.comuna.nombre }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Sector:</strong> 
+                {{ aviso.sector if aviso.sector else 'No especificado' }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Tipo:</strong> 
+                {{ 'Gato' if aviso.tipo == 'gato' else 'Perro' }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Cantidad:</strong> 
+                {{ aviso.cantidad }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Edad:</strong> 
+                {{ aviso.edad }} 
+                {% if aviso.unidad_medida == 'a' %}
+                    año{{ 's' if aviso.edad > 1 else '' }}
+                {% else %}
+                    mes{{ 'es' if aviso.edad > 1 else '' }}
+                {% endif %}
+            </div>
+        </div>
+        
+        <h3>Información de Contacto</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <strong>Nombre:</strong> {{ aviso.nombre }}
+            </div>
+            
+            <div class="info-item">
+                <strong>Email:</strong> {{ aviso.email }}
+            </div>
+            
+            {% if aviso.celular %}
+            <div class="info-item">
+                <strong>Celular:</strong> {{ aviso.celular }}
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if aviso.contactos %}
+        <h3>Medios de Contacto</h3>
+        <ul class="lista-contactos">
+            {% for contacto in aviso.contactos %}
+            <li>
+                <strong>{{ contacto.nombre }}:</strong> {{ contacto.identificador }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        {% if aviso.descripcion %}
+        <h3>Descripción</h3>
+        <p class="descripcion">{{ aviso.descripcion }}</p>
+        {% endif %}
+        
+        {% if aviso.fotos %}
+        <h3>Fotos ({{ aviso.fotos|length }})</h3>
+        <div class="fotos-grid">
+            {% for foto in aviso.fotos %}
+            <img src="{{ url_for('static', filename=foto.ruta_archivo) }}" 
+                 alt="Foto {{ aviso.tipo }}" 
+                 onclick="mostrarFoto('{{ url_for('static', filename=foto.ruta_archivo) }}')"
+                 class="foto-miniatura">
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="acciones">
+        <a href="{{ url_for('listado') }}" class="btn-accion">← Volver al listado</a>
+        <a href="{{ url_for('index') }}" class="btn-accion">🏠 Volver a la portada</a>
+    </div>
+</main>
+
+<!-- Visor de fotos -->
+<div id="visor" class="modal-visor" style="display: none;">
+    <div class="visor-content">
+        <img id="fotoGrande" src="" alt="Foto ampliada">
+        <button id="cerrarVisor" class="btn-cerrar" onclick="cerrarVisor()">✖ Cerrar</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}
