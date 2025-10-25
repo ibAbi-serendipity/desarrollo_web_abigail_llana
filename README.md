@@ -32,3 +32,50 @@
    - Se implementó un endpoint `/api/comunas/<region_id>` para cargar las comunas dinámicamente desde JavaScript al seleccionar una región, reemplazando el uso del archivo `region_comuna.js` de la Tarea 1.  
    - Las imágenes se renombran con un **timestamp** para evitar conflictos y se guardan en la carpeta `static/uploads`.  
    - Se agregó manejo de errores y mensajes mediante **Flask Flash** para informar al usuario sobre el resultado de cada operación.  
+
+# Tarea 3 – Desarrollo Web
+
+## Descripción
+En esta tercera entrega se amplía el sistema de adopción de mascotas desarrollado en la **Tarea 2**, incorporando **estadísticas** y un **sistema de comentarios** para los avisos de adopción. 
+
+Las funcionalidades principales añadidas son:
+
+### Estadísticas
+Se implementan **3 gráficos** para analizar los avisos de adopción:
+
+1. **Gráfico de líneas**  
+   - Muestra la cantidad de avisos agregados por día.  
+   - Eje X: días, Eje Y: cantidad de avisos.
+
+2. **Gráfico de torta**  
+   - Muestra el total de avisos de adopción por tipo de mascota: perro o gato.
+
+3. **Gráfico de barras**  
+   - Eje X: meses.  
+   - Para cada mes, se muestran dos barras: cantidad de avisos de gatos y de perros.  
+   - Eje Y: cantidad de avisos.
+
+Todos los gráficos se generan **en el lado del cliente** usando **JavaScript (fetch)** para consultar los endpoints del servidor que obtienen la información desde la base de datos. Se utilizó **Chart.js** para la visualización de los gráficos.
+
+### Sistema de comentarios
+Se agrega la funcionalidad para que los usuarios puedan **agregar y visualizar comentarios** en cada aviso de adopción:
+
+- **Agregar comentario**
+  - Formulario con campos:
+    - Nombre: obligatorio, entre 3 y 80 caracteres.
+    - Texto del comentario: obligatorio, mínimo 5 caracteres, área de texto de 4 filas y 50 columnas.
+  - Validación tanto en **cliente (JavaScript)** como en **servidor (Flask)**.
+  - Los comentarios válidos se insertan en la tabla `comentario` de la base de datos.
+  - Se informa al usuario si hay errores de validación y se mantiene el formulario visible para corrección.
+
+- **Listado de comentarios**
+  - Se muestran todos los comentarios asociados a un aviso, con:
+    - Fecha
+    - Nombre del comentarista
+    - Texto del comentario
+  - Se utiliza **JavaScript asíncrono (fetch)** para cargar los comentarios dinámicamente sin recargar la página.
+
+## Decisiones tomadas 
+- Se implementaron **endpoints API** para estadísticas y comentarios, consumidos mediante **fetch** en el cliente.   
+- Se eligió **Chart.js** para los gráficos por su facilidad de integración y licencia libre.
+
