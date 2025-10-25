@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas de Avisos de Adopción{% endblock %}
+
+{% block content %}
+<header>
+    <h1>📊 Estadísticas de Avisos de Adopción</h1>
+</header>
+
+<main>
+    <!-- Gráfico 1: Avisos por día (Líneas) - 1 PUNTO -->
+    <section class="grafico-container">
+        <h2>Cantidad de avisos por día</h2>
+        <div class="grafico-wrapper">
+            <canvas id="graficoLineas"></canvas>
+        </div>
+        <div id="loadingLineas" class="loading">Cargando datos...</div>
+    </section>
+
+    <!-- Gráfico 2: Avisos por tipo (Torta) - 1 PUNTO -->
+    <section class="grafico-container">
+        <h2>Total de avisos por tipo de mascota</h2>
+        <div class="grafico-wrapper">
+            <canvas id="graficoTorta"></canvas>
+        </div>
+        <div id="loadingTorta" class="loading">Cargando datos...</div>
+    </section>
+
+    <!-- Gráfico 3: Avisos por mes (Barras) - 1 PUNTO -->
+    <section class="grafico-container">
+        <h2>Avisos por mes: Gatos vs Perros</h2>
+        <div class="grafico-wrapper">
+            <canvas id="graficoBarras"></canvas>
+        </div>
+        <div id="loadingBarras" class="loading">Cargando datos...</div>
+    </section>
+</main>
+
+<footer>
+    <a href="{{ url_for('index') }}">← Volver a portada</a>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/estadisticas.js') }}"></script>
+{% endblock %}

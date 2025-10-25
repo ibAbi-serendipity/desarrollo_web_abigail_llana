@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -62,6 +62,15 @@ class ContactarPor(db.Model):
     nombre = db.Column(db.Enum('whatsapp', 'telegram', 'X', 'instagram', 'tiktok', 'otra'), nullable=False)
     identificador = db.Column(db.String(150), nullable=False)
     aviso_id = db.Column(db.Integer, db.ForeignKey('aviso_adopcion.id'), nullable=False)
+
+class Comentario(db.Model):
+    __tablename__ = 'comentario'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(80), nullable=False)
+    texto = db.Column(db.String(300), nullable=False)
+    fecha = db.Column(db.TIMESTAMP, nullable=False, default=datetime.now)
+    aviso_id = db.Column(db.Integer, db.ForeignKey('aviso_adopcion.id'), nullable=False)
+    aviso = db.relationship('AvisoAdopcion', backref=db.backref('comentarios', lazy=True))
 
 # Validaciones
 def allowed_file(filename):
@@ -297,6 +306,162 @@ def detalle(aviso_id):
 def get_comunas(region_id):
     comunas = Comuna.query.filter_by(region_id=region_id).all()
     return {'comunas': [{'id': c.id, 'nombre': c.nombre} for c in comunas]}
+
+@app.route('/estadisticas')
+def estadisticas():
+    """Página de estadísticas"""
+    return render_template('estadisticas.html')
+
+@app.route('/api/estadisticas/avisos-por-dia')
+def estadisticas_avisos_por_dia():
+    """API: Cantidad de avisos por día - 1 PUNTO"""
+    from sqlalchemy import func, cast, Date
+    
+    # Agrupar avisos por fecha (sin hora)
+    resultados = db.session.query(
+        cast(AvisoAdopcion.fecha_ingreso, Date).label('fecha'),
+        func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by(
+        cast(AvisoAdopcion.fecha_ingreso, Date)
+    ).order_by('fecha').all()
+    
+    datos = {
+        'fechas': [r.fecha.strftime('%Y-%m-%d') for r in resultados],
+        'cantidades': [r.cantidad for r in resultados]
+    }
+    
+    return jsonify(datos)
+
+@app.route('/api/estadisticas/avisos-por-tipo')
+def estadisticas_avisos_por_tipo():
+    """API: Total de avisos por tipo (gato/perro) - 1 PUNTO"""
+    from sqlalchemy import func
+    
+    resultados = db.session.query(
+        AvisoAdopcion.tipo,
+        func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by(AvisoAdopcion.tipo).all()
+    
+    datos = {
+        'tipos': [r.tipo.capitalize() for r in resultados],
+        'cantidades': [r.cantidad for r in resultados]
+    }
+    
+    return jsonify(datos)
+
+@app.route('/api/estadisticas/avisos-por-mes')
+def estadisticas_avisos_por_mes():
+    """API: Avisos por mes separados por tipo (gatos vs perros) - 1 PUNTO"""
+    from sqlalchemy import func, extract
+    
+    # Obtener año y mes de cada aviso, agrupado por tipo
+    resultados = db.session.query(
+        extract('year', AvisoAdopcion.fecha_ingreso).label('anio'),
+        extract('month', AvisoAdopcion.fecha_ingreso).label('mes'),
+        AvisoAdopcion.tipo,
+        func.count(AvisoAdopcion.id).label('cantidad')
+    ).group_by('anio', 'mes', AvisoAdopcion.tipo).order_by('anio', 'mes').all()
+    
+    # Organizar datos por mes
+    meses_dict = {}
+    for r in resultados:
+        mes_key = f"{int(r.anio)}-{int(r.mes):02d}"
+        if mes_key not in meses_dict:
+            meses_dict[mes_key] = {'gatos': 0, 'perros': 0}
+        
+        if r.tipo == 'gato':
+            meses_dict[mes_key]['gatos'] = r.cantidad
+        else:
+            meses_dict[mes_key]['perros'] = r.cantidad
+    
+    # Convertir a listas ordenadas
+    meses_ordenados = sorted(meses_dict.keys())
+    
+    datos = {
+        'meses': meses_ordenados,
+        'gatos': [meses_dict[m]['gatos'] for m in meses_ordenados],
+        'perros': [meses_dict[m]['perros'] for m in meses_ordenados]
+    }
+    
+    return jsonify(datos)
+
+@app.route('/api/comentarios/<int:aviso_id>')
+def obtener_comentarios(aviso_id):
+    """API: Obtener comentarios de un aviso - 1 PUNTO (Listado)"""
+    comentarios = Comentario.query.filter_by(aviso_id=aviso_id).order_by(Comentario.fecha.desc()).all()
+    
+    datos = []
+    for c in comentarios:
+        datos.append({
+            'id': c.id,
+            'nombre': c.nombre,
+            'texto': c.texto,
+            'fecha': c.fecha.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    return jsonify({'comentarios': datos})
+
+@app.route('/api/comentarios/<int:aviso_id>', methods=['POST'])
+def agregar_comentario(aviso_id):
+    """API: Agregar comentario a un aviso - 2 PUNTOS"""
+    
+    # Verificar que el aviso existe
+    aviso = AvisoAdopcion.query.get(aviso_id)
+    if not aviso:
+        return jsonify({'error': 'Aviso no encontrado'}), 404
+    
+    # Obtener datos del request
+    data = request.get_json()
+    
+    # Validación del lado del servidor
+    errores = []
+    
+    nombre = data.get('nombre', '').strip()
+    if not nombre:
+        errores.append('El nombre es requerido')
+    elif len(nombre) < 3:
+        errores.append('El nombre debe tener al menos 3 caracteres')
+    elif len(nombre) > 80:
+        errores.append('El nombre no puede exceder 80 caracteres')
+    
+    texto = data.get('texto', '').strip()
+    if not texto:
+        errores.append('El texto del comentario es requerido')
+    elif len(texto) < 5:
+        errores.append('El comentario debe tener al menos 5 caracteres')
+    elif len(texto) > 300:
+        errores.append('El comentario no puede exceder 300 caracteres')
+    
+    # Si hay errores, retornarlos
+    if errores:
+        return jsonify({'error': 'Errores de validación', 'errores': errores}), 400
+    
+    # Crear y guardar el comentario
+    try:
+        comentario = Comentario(
+            nombre=nombre,
+            texto=texto,
+            fecha=datetime.now(),
+            aviso_id=aviso_id
+        )
+        
+        db.session.add(comentario)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Comentario agregado exitosamente',
+            'comentario': {
+                'id': comentario.id,
+                'nombre': comentario.nombre,
+                'texto': comentario.texto,
+                'fecha': comentario.fecha.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar el comentario: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
