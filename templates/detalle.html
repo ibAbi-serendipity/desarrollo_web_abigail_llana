@@ -102,6 +102,33 @@
             {% endfor %}
         </div>
         {% endif %}
+
+        <h3>💬 Comentarios</h3>
+        <!-- Formulario para agregar comentario-->
+        <div class="comentario-form">
+            <h4>Agregar un comentario</h4>
+            <div id="mensajeComentario" class="mensaje" style="display: none;"></div>
+            
+            <label for="nombreComentario">Nombre: <span class="required">*</span></label>
+            <input type="text" id="nombreComentario" name="nombre" 
+                   minlength="3" maxlength="80" placeholder="Tu nombre" required>
+            
+            <label for="textoComentario">Comentario: <span class="required">*</span></label>
+            <textarea id="textoComentario" name="texto" 
+                      rows="4" cols="50" minlength="5" maxlength="300" 
+                      placeholder="Escribe tu comentario aquí..." required></textarea>
+            
+            <button type="button" id="btnAgregarComentario" data-aviso-id="{{ aviso.id }}" onclick="agregarComentario({{ aviso.id }})">
+                Agregar comentario
+            </button>
+        </div>
+        
+        <!-- Listado de comentarios -->
+        <div class="comentarios-lista">
+            <h4>Comentarios anteriores</h4>
+            <ul id="listaComentarios"></ul>
+                <p id="mensajeComentario" class="mensaje" style="display:none;"></p>
+        </div>
     </div>
 
     <div class="acciones">
@@ -113,7 +140,7 @@
 <!-- Visor de fotos -->
 <div id="visor" class="modal-visor" style="display: none;">
     <div class="visor-content">
-        <img id="fotoGrande" src="" alt="Foto ampliada">
+        <img id="fotoGrande" src="placeholder.jpg" alt="Foto ampliada">
         <button id="cerrarVisor" class="btn-cerrar" onclick="cerrarVisor()">✖ Cerrar</button>
     </div>
 </div>
@@ -121,4 +148,5 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/comentarios.js') }}"></script>
 {% endblock %}
