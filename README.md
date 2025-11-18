@@ -79,3 +79,33 @@ Se agrega la funcionalidad para que los usuarios puedan **agregar y visualizar c
 - Se implementaron **endpoints API** para estadísticas y comentarios, consumidos mediante **fetch** en el cliente.   
 - Se eligió **Chart.js** para los gráficos por su facilidad de integración y licencia libre.
 
+# Tarea 4 – Desarrollo Web
+
+## Descripción
+En esta tarea se agrega una nueva funcionalidad al sistema de adopción desarrollado previamente en Flask, incorporando ahora un módulo adicional en Spring Boot para manejar la evaluación de los avisos mediante notas.
+
+Las funcionalidades implementadas son:
+
+- Mostrar promedio de notas en el listado de avisos:
+Cada aviso muestra su nota promedio. Si no tiene evaluaciones, se muestra “-”.
+
+- Evaluar aviso:
+Al hacer clic en “evaluar”, el usuario puede ingresar una nota entre 1 y 7.
+La nota se envía mediante JavaScript usando fetch() hacia un servicio REST en Spring Boot.
+
+- Actualización dinámica:
+Luego de agregar una nota, el promedio se recalcula y se actualiza en pantalla sin recargar la página.
+
+## Decisiones tomadas 
+- Se mantuvo el proyecto original en Flask, sin modificar su estructura ni sus rutas principales.
+- Se creó un módulo independiente en Spring Boot para manejar: almacenamiento de notas, cálculo de promedios, validación de rangos (solo enteros entre 1 y 7).
+- Las llamadas al backend se realizan de forma asíncrona con fetch() desde el archivo notas.js, ubicado en la carpeta static/js del proyecto Flask.
+- El frontend solo muestra un nuevo botón “evaluar” y un contenedor para la nota promedio, sin alterar el resto del diseño del listado.
+- Se evitaron dependencias entre Flask y Spring Boot fuera de la comunicación vía API, manteniendo ambos sistemas aislados.
+
+## Cómo ejecutar el proyecto
+1. Ejecutar el servidor Flask con
+python app.py
+
+2. Ejecutar el servidor Spring Boot con
+mvn spring-boot:run
