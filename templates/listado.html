@@ -19,15 +19,23 @@
                 <th>Cantidad, Tipo y Edad</th>
                 <th>Nombre del contacto</th>
                 <th>Total Fotos</th>
+                <th>Nota</th>
+                <th>Evaluar</th>  
             </tr>
         </thead>
         <tbody>
             {% for aviso in avisos.items %}
-            <tr onclick="window.location='{{ url_for('detalle', aviso_id=aviso.id) }}'" style="cursor: pointer;" data-aviso-id="{{ aviso.id }}">
+            <tr 
+                onclick="window.location='{{ url_for('detalle', aviso_id=aviso.id) }}'" 
+                style="cursor: pointer;" 
+                data-aviso-id="{{ aviso.id }}"
+            >
+
                 <td>{{ aviso.fecha_ingreso.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>{{ aviso.fecha_entrega.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>{{ aviso.comuna.nombre }}</td>
                 <td>{{ aviso.sector if aviso.sector else '-' }}</td>
+
                 <td>
                     {{ aviso.cantidad }} 
                     {{ 'Gato' if aviso.tipo == 'gato' else 'Perro' }}{{ 's' if aviso.cantidad > 1 else '' }}
@@ -38,8 +46,16 @@
                         mes{{ 'es' if aviso.edad > 1 else '' }}
                     {% endif %}
                 </td>
+
                 <td>{{ aviso.nombre }}</td>
                 <td>{{ aviso.fotos|length }}</td>
+
+                <!--NOTA -->
+                <td><span id="nota-{{ aviso.id }}">-</span></td>
+
+                <td>
+                    <button onclick="evaluar(event, {{ aviso.id }})">Evaluar</button>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -72,4 +88,7 @@
 <footer>
     <a href="{{ url_for('index') }}">← Volver a portada</a>
 </footer>
+
+<script src="{{ url_for('static', filename='js/notas.js') }}"></script>
+
 {% endblock %}
